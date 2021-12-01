@@ -68,4 +68,4 @@ foreach ($number in $newNumbers) {
 
 # Wrong answer:
 #  
-# Correct Answer: 
+# Correct Answer: 1822
