@@ -27,6 +27,7 @@ function Get-BlankBingoBoard() {
         E4      = $bingoValue
         E5      = $bingoValue
         Numbers = $null
+        Bingo   = $false
     }
     $bingoBoard
 }
@@ -110,6 +111,20 @@ function Test-RowForBingo() {
     }
     $true
 }
+function Test-ColumnForBingo() {
+    param(
+        [PSCustomObject] $BingoBoard,
+        [int] $Column
+    )
+    for ($i = 0; $i -lt 5; $i++) {
+        $identifier = Get-ValueIdentifier -LineCounter ($i + 1) -i $Column
+        if ($BingoBoard.$identifier.Marked -eq $false) {
+            $false
+            return
+        }
+    }
+    $true
+}
 function Test-ForBingo() {
     param(
         [PSCustomObject] $BingoBoard
@@ -123,6 +138,12 @@ function Test-ForBingo() {
     }
     for ($i = 0; $i -lt 5; $i++) {
         if (Test-RowForBingo -BingoBoard $BingoBoard -Row ($i + 1)) {
+            $true
+            return
+        }
+    }
+    for ($i = 0; $i -lt 5; $i++) {
+        if (Test-ColumnForBingo -BingoBoard $BingoBoard -Column ($i + 1)) {
             $true
             return
         }
@@ -146,8 +167,7 @@ if ($sampleInput -eq $true) {
 else {
     [string[]] $inputValues = Get-Content (Join-Path $PSScriptRoot "Input.txt")
 }
-# Part 1
-
+#region Part 1
 $bingoBoards = Get-BingoBoardsFromInput -InputSource $inputValues
 [int[]]$bingoNumbers = $inputValues[0].Split(',')
 
@@ -160,6 +180,7 @@ for ($i = 0; $i -lt $bingoNumbers.Length; $i++) {
         if ($i -gt 4) {
             if (Test-ForBingo -BingoBoard $board) {
                 $bingo = $true
+                $board.Bingo = $true
                 $boardWithBingo = $board
                 $bingoNumber = $bingoNumbers[$i]                
                 break;
@@ -174,15 +195,42 @@ $UnmarkedSum = Get-SumOfUnmarkedFields -BingoBoard $boardWithBingo
 Write-Host "Bingo! ($($bingoNumber))"
 Write-Host "Sum (unmarked): $UnmarkedSum"
 Write-Host "Result        : $($UnmarkedSum * $bingoNumber)"
+
 # Wrong answer:
 #  
 # Correct Answer: 10680
 
+#endregion 
+
 # ====================================================================
 
-# Part 2
+#region Part 2
+$bingoBoards = Get-BingoBoardsFromInput -InputSource $inputValues
+[int[]]$bingoNumbers = $inputValues[0].Split(',')
 
+$bingo = $false
+$lastBoardWithBingo = $null
+$bingoNumber = 0
+for ($i = 0; $i -lt $bingoNumbers.Length; $i++) {
+    foreach ($board in $bingoBoards | Where-Object { ($_.Numbers -contains $bingoNumbers[$i]) -and ($_.Bingo -eq $false) }) {        
+        $board = Update-BingoBoard -BingoBoard $board -BingoValue $bingoNumbers[$i]
+        if ($i -gt 4) {
+            if (Test-ForBingo -BingoBoard $board) {
+                $bingo = $true
+                $board.Bingo = $true
+                $lastBoardWithBingo = $board
+                $bingoNumber = $bingoNumbers[$i]
+            }
+        }
+    }
+}
+$UnmarkedSum = Get-SumOfUnmarkedFields -BingoBoard $lastBoardWithBingo
+Write-Host "Bingo! ($($bingoNumber))"
+Write-Host "Sum (unmarked): $UnmarkedSum"
+Write-Host "Result        : $($UnmarkedSum * $bingoNumber)"
 
 # Wrong answer:
 #  
-# Correct Answer: 
+# Correct Answer: 31892
+
+#endregion 
